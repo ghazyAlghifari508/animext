@@ -39,8 +39,6 @@ A modern, full-stack anime discovery and collection management web application b
 - Display user GitHub avatar and name
 
 ### 🎨 UI/UX
-- **Custom Design** - No template or AI-generated UI
-- Dark mode support
 - Fully responsive (mobile-first)
 - Smooth animations and transitions
 - Loading skeletons
