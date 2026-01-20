@@ -1,0 +1,159 @@
+// Prisma Schema for AnimeList Web App
+// Database: MySQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// Authentication Models (NextAuth.js)
+// ========================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?   // GitHub avatar URL
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  collections   Collection[]
+  comments      Comment[]
+  commentLikes  CommentLike[]
+
+  @@index([email])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ========================================
+// Anime & Collection Models
+// ========================================
+
+model Anime {
+  id          Int      @id // MAL ID from Jikan API
+  title       String   @db.VarChar(255)
+  titleEnglish String? @db.VarChar(255)
+  synopsis    String?  @db.Text
+  imageUrl    String?  @db.VarChar(500)
+  trailerUrl  String?  @db.VarChar(500)
+  score       Float?
+  episodes    Int?
+  status      String?  @db.VarChar(50)
+  rating      String?  @db.VarChar(50)
+  year        Int?
+  season      String?  @db.VarChar(50)
+  genres      String?  @db.Text // JSON array stored as text
+  
+  // Caching metadata
+  lastFetched DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  collections Collection[]
+  comments    Comment[]
+
+  @@index([title])
+  @@index([score])
+  @@index([lastFetched])
+}
+
+model Collection {
+  id        String   @id @default(cuid())
+  userId    String
+  animeId   Int
+  addedAt   DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anime     Anime    @relation(fields: [animeId], references: [id], onDelete: Cascade)
+
+  // Prevent duplicate entries
+  @@unique([userId, animeId])
+  @@index([userId])
+  @@index([animeId])
+}
+
+// ========================================
+// Comment System Models
+// ========================================
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  userId    String
+  animeId   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anime     Anime    @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  likes     CommentLike[]
+
+  @@index([userId])
+  @@index([animeId])
+  @@index([createdAt])
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  // One like per user per comment
+  @@unique([userId, commentId])
+  @@index([userId])
+  @@index([commentId])
+}
