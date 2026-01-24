@@ -13,15 +13,9 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    jwt: async ({ token, user }) => {
-      if (user) {
-        token.id = user.id
-      }
-      return token
-    },
-    session: async ({ session, token }) => {
+    session: async ({ session, user }) => {
       if (session?.user) {
-        session.user.id = token.id as string
+        session.user.id = user.id
       }
       return session
     },
@@ -32,7 +26,8 @@ export const authOptions: NextAuthOptions = {
     error: "/signin",
   },
   session: {
-    strategy: "jwt",
+    strategy: "database",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 }
 
