@@ -1,6 +1,6 @@
 import pLimit from 'p-limit'
 
-const limit = pLimit(3) // Max 3 concurrent requests to respect Jikan API limits
+const limit = pLimit(3)
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 const JIKAN_API_URL = process.env.JIKAN_API_URL || 'https://api.jikan.moe/v4'
@@ -39,18 +39,14 @@ export interface JikanResponse<T> {
   }
 }
 
-/**
- * Fetch anime by ID from Jikan API with rate limiting
- */
 export async function fetchAnimeFromJikan(animeId: number): Promise<JikanAnime> {
   return limit(async () => {
     try {
       const res = await fetch(`${JIKAN_API_URL}/anime/${animeId}`, {
-        next: { revalidate: 86400 } // Cache for 24 hours
+        next: { revalidate: 86400 }
       })
       
       if (res.status === 429) {
-        // Rate limited - wait and retry
         await delay(1000)
         return fetchAnimeFromJikan(animeId)
       }
@@ -68,14 +64,11 @@ export async function fetchAnimeFromJikan(animeId: number): Promise<JikanAnime> 
   })
 }
 
-/**
- * Fetch top anime from Jikan API
- */
 export async function fetchTopAnime(page = 1): Promise<JikanResponse<JikanAnime[]>> {
   return limit(async () => {
     try {
       const res = await fetch(`${JIKAN_API_URL}/top/anime?page=${page}`, {
-        next: { revalidate: 3600 } // Cache for 1 hour
+        next: { revalidate: 3600 }
       })
       
       if (res.status === 429) {
@@ -95,9 +88,6 @@ export async function fetchTopAnime(page = 1): Promise<JikanResponse<JikanAnime[
   })
 }
 
-/**
- * Search anime from Jikan API
- */
 export async function searchAnime(query: string, page = 1): Promise<JikanResponse<JikanAnime[]>> {
   return limit(async () => {
     try {
@@ -125,9 +115,6 @@ export async function searchAnime(query: string, page = 1): Promise<JikanRespons
   })
 }
 
-/**
- * Fetch seasonal anime
- */
 export async function fetchSeasonalAnime(year?: number, season?: string): Promise<JikanResponse<JikanAnime[]>> {
   const currentYear = year || new Date().getFullYear()
   const currentSeason = season || getCurrentSeason()
@@ -166,9 +153,6 @@ function getCurrentSeason(): string {
   return 'fall'
 }
 
-/**
- * Fetch anime recommendations from Jikan API
- */
 export async function fetchAnimeRecommendations(id: number): Promise<JikanAnime[]> {
   return limit(async () => {
     try {
@@ -186,8 +170,6 @@ export async function fetchAnimeRecommendations(id: number): Promise<JikanAnime[
       }
       
       const data = await res.json()
-      // Jikan returns { data: [{ entry: { ...anime props... }, ... }] }
-      // We need to map it to just the anime object
       return data.data.map((item: any) => item.entry).slice(0, 3) 
     } catch (error) {
       console.error('Failed to fetch recommendations:', error)

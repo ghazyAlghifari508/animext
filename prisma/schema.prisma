@@ -1,6 +1,3 @@
-// Prisma Schema for AnimeList Web App
-// Database: MySQL
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,10 +6,6 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
-
-// ========================================
-// Authentication Models (NextAuth.js)
-// ========================================
 
 model Account {
   id                String  @id @default(cuid())
@@ -49,11 +42,10 @@ model User {
   name          String?
   email         String?   @unique
   emailVerified DateTime?
-  image         String?   // GitHub avatar URL
+  image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // Relations
   accounts      Account[]
   sessions      Session[]
   collections   Collection[]
@@ -71,12 +63,8 @@ model VerificationToken {
   @@id([identifier, token])
 }
 
-// ========================================
-// Anime & Collection Models
-// ========================================
-
 model Anime {
-  id          Int      @id // MAL ID from Jikan API
+  id          Int      @id
   title       String   @db.VarChar(255)
   titleEnglish String? @db.VarChar(255)
   synopsis    String?  @db.Text
@@ -88,14 +76,13 @@ model Anime {
   rating      String?  @db.VarChar(50)
   year        Int?
   season      String?  @db.VarChar(50)
-  genres      String?  @db.Text // JSON array stored as text
+  genres      String?  @db.Text
   
-  // Caching metadata
   lastFetched DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relations
+
   collections Collection[]
   comments    Comment[]
 
@@ -110,11 +97,9 @@ model Collection {
   animeId   Int
   addedAt   DateTime @default(now())
 
-  // Relations
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   anime     Anime    @relation(fields: [animeId], references: [id], onDelete: Cascade)
 
-  // Prevent duplicate entries
   @@unique([userId, animeId])
   @@index([userId])
   @@index([animeId])
@@ -148,11 +133,10 @@ model CommentLike {
   commentId String
   createdAt DateTime @default(now())
 
-  // Relations
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
-  // One like per user per comment
+
   @@unique([userId, commentId])
   @@index([userId])
   @@index([commentId])

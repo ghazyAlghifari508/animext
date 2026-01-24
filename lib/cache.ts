@@ -1,18 +1,13 @@
 import { prisma } from './prisma'
 import { fetchAnimeFromJikan } from './jikan'
 
-const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 days
+const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000
 
-/**
- * Get anime with caching - checks database first, fetches from API if needed
- */
 export async function getCachedAnime(animeId: number) {
-  // Check database first
   const cached = await prisma.anime.findUnique({
     where: { id: animeId },
   })
 
-  // Check if cache is fresh (< 7 days old)
   const isFresh =
     cached &&
     new Date().getTime() - cached.lastFetched.getTime() < CACHE_DURATION
@@ -21,10 +16,8 @@ export async function getCachedAnime(animeId: number) {
     return cached
   }
 
-  // Fetch from Jikan API
   const jikanData = await fetchAnimeFromJikan(animeId)
 
-  // Upsert to database
   const anime = await prisma.anime.upsert({
     where: { id: animeId },
     create: {

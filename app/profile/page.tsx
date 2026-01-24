@@ -25,7 +25,6 @@ export default async function ProfilePage() {
     prisma.comment.count({ where: { userId: session.user.id } }),
   ])
 
-  // Get recent comments
   const recentComments = await prisma.comment.findMany({
     where: { userId: session.user.id },
     include: {
@@ -35,7 +34,6 @@ export default async function ProfilePage() {
     take: 3,
   })
 
-  // Get recent collections
   const recentCollections = await prisma.collection.findMany({
     where: { userId: session.user.id },
     include: {
